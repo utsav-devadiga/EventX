@@ -32,7 +32,7 @@ fun DashboardEventScreen(
     } else {
         LazyColumn {
             items(eventListState.eventList.size) { index ->
-                EventItem(eventListState.eventList[index])
+                EventItem(eventListState.eventList[index],navHostController)
             }
         }
 

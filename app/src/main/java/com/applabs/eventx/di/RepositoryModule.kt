@@ -18,7 +18,7 @@ abstract class RepositoryModule {
 
     @Binds
     @Singleton
-    abstract fun bindMovieListRepository(
+    abstract fun bindEventListRepository(
         eventListRepositoryImpl: EventListRepositoryImpl
     ): EventListRepository
 

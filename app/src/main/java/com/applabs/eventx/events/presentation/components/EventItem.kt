@@ -14,7 +14,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavHostController
 import com.applabs.eventx.events.domain.model.Event
+import com.applabs.eventx.events.util.Screen
 
 /**
  * @author Utsav Devadiga
@@ -22,7 +24,8 @@ import com.applabs.eventx.events.domain.model.Event
 
 @Composable
 fun EventItem(
-    event: Event
+    event: Event,
+    navHostController: NavHostController
 ) {
 
     Column(
@@ -32,7 +35,7 @@ fun EventItem(
             .padding(8.dp)
             .clip(RoundedCornerShape(28.dp))
             .clickable {
-                //navHostController.navigate(Screen.Details.rout + "/${event.id}")
+                navHostController.navigate(Screen.Details.route + "/${event.event_id}")
             }
     ) {
         Text(text = event.event_name)

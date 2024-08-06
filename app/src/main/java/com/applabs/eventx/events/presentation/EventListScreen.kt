@@ -16,7 +16,7 @@ import com.applabs.eventx.events.presentation.components.EventItem
 @Composable
 fun EventListScreen(
     eventListState: EventListState,
-    navController: NavHostController,
+    navHostController: NavHostController,
     onEvent: (EventListUiEvent) -> Unit
 ) {
 
@@ -33,7 +33,7 @@ fun EventListScreen(
     } else {
         LazyColumn {
             items(eventListState.eventList.size) { index ->
-                EventItem(eventListState.eventList[index])
+                EventItem(eventListState.eventList[index], navHostController)
             }
         }
 
