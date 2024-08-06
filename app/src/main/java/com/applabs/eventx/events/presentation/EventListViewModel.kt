@@ -66,15 +66,14 @@ class EventListViewModel @Inject constructor(
                             it.copy(isLoading = true)
                         }
 
-                        is Resource.Success -> result.data?.let { eventListState ->
+                        is Resource.Success -> result.data?.let { eventList ->
                             _eventListState.update {
                                 it.copy(
-                                    eventList = eventListState,
-
+                                    eventList = eventList,
                                 )
                             }
 
-                            Log.d("VIEWMODEL", "getAllEvents: $eventListState")
+                            Log.d("VIEWMODEL", "getAllEvents: ${eventList}")
                         }
 
                     }

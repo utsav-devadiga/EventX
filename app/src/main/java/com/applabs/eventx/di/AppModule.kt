@@ -18,7 +18,7 @@ object AppModule {
 
     @Provides
     @Singleton
-    fun providesMovieDatabase(app: Application): EventDatabase {
+    fun providesEventDatabase(app: Application): EventDatabase {
         return Room.databaseBuilder(
             app,
             EventDatabase::class.java,

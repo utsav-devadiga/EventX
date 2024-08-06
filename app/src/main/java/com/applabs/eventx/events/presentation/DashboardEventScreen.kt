@@ -1,5 +1,6 @@
 package com.applabs.eventx.events.presentation
 
+import android.util.Log
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.LazyColumn
@@ -19,7 +20,6 @@ fun DashboardEventScreen(
     navHostController: NavHostController,
     onEvent: (EventListUiEvent) -> Unit
 ) {
-
     if (eventListState.eventList.isEmpty()) {
 
         Box(
