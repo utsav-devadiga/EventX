@@ -101,9 +101,9 @@ class EventListRepositoryImpl @Inject constructor(
             event_duration = "3 days",
             event_participants = "test,test2,test3",
             event_timeStamp = "xxxxx",
-            event_name = "event Name",
+            event_name = "event Name 3",
             category = "test",
-            event_id = 1
+            event_id = 3
         )
 
         eventDatabase.eventDao.upsertEvent(event = event)
