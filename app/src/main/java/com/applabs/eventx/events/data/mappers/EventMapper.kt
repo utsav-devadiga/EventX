@@ -16,7 +16,6 @@ fun EventDto.toEventEntity(
         event_duration = event_duration,
         event_description = event_description,
         event_location = event_location,
-        event_id = event_id,
         category = category,
         event_participants = try {
             event_participants?.joinToString(",") ?: "No Participants"

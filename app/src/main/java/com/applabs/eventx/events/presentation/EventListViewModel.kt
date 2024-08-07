@@ -23,13 +23,15 @@ class EventListViewModel @Inject constructor(
 ) : ViewModel() {
 
     private var _eventListState = MutableStateFlow(EventListState())
-
     val eventListState = _eventListState.asStateFlow()
 
-    init {
-        getAllEvents(false)
 
+    private var _addEventSuccess = MutableStateFlow(false)
+    val addEventSuccess = _addEventSuccess.asStateFlow()
+
+    init {
         addSampleEvent()
+        getAllEvents(false)
     }
 
 
@@ -85,16 +87,32 @@ class EventListViewModel @Inject constructor(
 
     fun addEvents(event: EventDto) {
         viewModelScope.launch {
-            Log.d("DATABASE OPERATION", "addEvent: from viewmodel")
             eventListRepository.addEvent(event)
-            getAllEvents(fetchFromRemote = false) // Refresh the event list after adding a new event
+                .collectLatest { result ->
+                    when (result) {
+                        is Resource.Loading -> _eventListState.update { it.copy(isLoading = true) }
+                        is Resource.Success -> {
+                            getAllEvents(false) // Refresh the event list after adding a new event
+                            _eventListState.update { it.copy(isLoading = false) }
+                            _addEventSuccess.value = true // Set add event success to true
+                        }
+
+                        is Resource.Error -> {
+                            _eventListState.update { it.copy(isLoading = false) }
+                            // Handle the error, maybe show a message to the user
+                        }
+                    }
+                }
         }
+    }
+
+    fun resetAddEventSuccess() {
+        _addEventSuccess.value = false
     }
 
     fun editEvent(event: EventDto) {
         viewModelScope.launch {
             eventListRepository.editEvent(event)
-            getAllEvents(fetchFromRemote = false) // Refresh the event list after editing an event
         }
     }
 

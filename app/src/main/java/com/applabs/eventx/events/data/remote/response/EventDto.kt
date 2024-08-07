@@ -11,5 +11,4 @@ data class EventDto(
     val event_description: String,
     val event_participants: List<String>?,
     val category: String,
-    val event_id: Int
 )

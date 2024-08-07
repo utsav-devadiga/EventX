@@ -82,14 +82,12 @@ fun HomeScreen(navHostController: NavHostController) {
                 composable(Screen.DashboardEvents.route) {
                     DashboardEventScreen(
                         navHostController = navHostController,
-                        eventListState = eventListState,
                         onEvent = eventListViewModel::onEvent
                     )
                 }
                 composable(Screen.EventList.route) {
                     EventListScreen(
                         navHostController = navHostController,
-                        eventListState = eventListState,
                         onEvent = eventListViewModel::onEvent
                     )
                 }

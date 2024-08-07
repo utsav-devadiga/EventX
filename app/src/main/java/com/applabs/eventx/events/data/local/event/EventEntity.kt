@@ -16,6 +16,6 @@ data class EventEntity(
     val event_description: String,
     val event_participants: String,
     val category: String,
-    @PrimaryKey
-    val event_id: Int
+    @PrimaryKey(autoGenerate = true)
+    val event_id: Int = 0
 )

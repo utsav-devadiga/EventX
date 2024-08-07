@@ -21,8 +21,8 @@ interface EventListRepository {
     suspend fun addSampleEvent(): Boolean
 
 
-    suspend fun addEvent(event: EventDto): Flow<Resource<Boolean>>
+    suspend fun addEvent(event: EventDto):Flow<Resource<Boolean>>
 
-    suspend fun editEvent(event: EventDto): Flow<Resource<Boolean>>
+    suspend fun editEvent(event: EventDto)
 
 }
