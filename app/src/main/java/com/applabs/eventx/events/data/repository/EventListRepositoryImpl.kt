@@ -1,8 +1,11 @@
 package com.applabs.eventx.events.data.repository
 
+import android.util.Log
 import com.applabs.eventx.events.data.local.event.EventDatabase
 import com.applabs.eventx.events.data.local.event.EventEntity
 import com.applabs.eventx.events.data.mappers.toEvent
+import com.applabs.eventx.events.data.mappers.toEventEntity
+import com.applabs.eventx.events.data.remote.response.EventDto
 import com.applabs.eventx.events.domain.model.Event
 import com.applabs.eventx.events.domain.repository.EventListRepository
 import com.applabs.eventx.events.util.Resource
@@ -93,6 +96,87 @@ class EventListRepositoryImpl @Inject constructor(
 
     }
 
+
+    override suspend fun addEvent(event: EventDto): Flow<Resource<Boolean>> {
+        Log.d("DATABASE OPERATION", "addEvent: from flow")
+
+        val eventEntity = event.toEventEntity()
+
+        val event_status = eventDatabase.eventDao.upsertEvent(eventEntity)
+        return flow {
+            emit(Resource.Loading(true))
+
+
+
+
+
+            Log.d("DATABASE OPERATION", "addEvent: $event_status")
+
+            try {
+                emit(
+                    Resource.Success(
+                        true
+                    )
+                )
+
+                emit(Resource.Loading(false))
+
+                return@flow
+            } catch (e: Exception) {
+                Log.e("DATABASE OPERATION", "addEvent: $e")
+                emit(
+                    Resource.Error(
+                        "Error: No Such Event $e"
+                    )
+                )
+
+                emit(
+                    Resource.Loading(
+                        false
+                    )
+                )
+                Log.d("DATABASE OPERATION", "addEvent error: $event_status")
+                return@flow
+            }
+
+
+        }
+    }
+
+    override suspend fun editEvent(event: EventDto): Flow<Resource<Boolean>> {
+        return flow {
+            emit(Resource.Loading(true))
+
+            val eventEntity = event.toEventEntity()
+
+            val event_status = eventDatabase.eventDao.updateEvent(eventEntity)
+
+            if (event_status != null) {
+                emit(
+                    Resource.Success(
+                        true
+                    )
+                )
+
+                emit(Resource.Loading(false))
+                return@flow
+            }
+
+            emit(
+                Resource.Error(
+                    "Error: No Such Event"
+                )
+            )
+
+            emit(
+                Resource.Loading(
+                    false
+                )
+            )
+            return@flow
+        }
+    }
+
     override suspend fun addSampleEvent(): Boolean {
 
         val event = EventEntity(
@@ -110,6 +194,5 @@ class EventListRepositoryImpl @Inject constructor(
 
         return true
     }
-
 
 }

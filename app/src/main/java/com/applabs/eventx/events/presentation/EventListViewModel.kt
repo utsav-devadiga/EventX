@@ -3,6 +3,7 @@ package com.applabs.eventx.events.presentation
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.applabs.eventx.events.data.remote.response.EventDto
 import com.applabs.eventx.events.domain.repository.EventListRepository
 import com.applabs.eventx.events.util.Resource
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -80,6 +81,21 @@ class EventListViewModel @Inject constructor(
                 }
         }
 
+    }
+
+    fun addEvents(event: EventDto) {
+        viewModelScope.launch {
+            Log.d("DATABASE OPERATION", "addEvent: from viewmodel")
+            eventListRepository.addEvent(event)
+            getAllEvents(fetchFromRemote = false) // Refresh the event list after adding a new event
+        }
+    }
+
+    fun editEvent(event: EventDto) {
+        viewModelScope.launch {
+            eventListRepository.editEvent(event)
+            getAllEvents(fetchFromRemote = false) // Refresh the event list after editing an event
+        }
     }
 
 
