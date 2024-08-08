@@ -10,16 +10,11 @@ import kotlinx.coroutines.flow.Flow
  */
 interface EventListRepository {
 
-
     suspend fun getEventList(
         forceFetchFromRemote: Boolean
     ): Flow<Resource<List<Event>>>
 
-
     suspend fun getEvent(id: Int): Flow<Resource<Event>>
-
-    suspend fun addSampleEvent(): Boolean
-
 
     suspend fun addEvent(event: EventDto):Flow<Resource<Boolean>>
 

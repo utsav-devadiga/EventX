@@ -30,7 +30,6 @@ class EventListViewModel @Inject constructor(
     val addEventSuccess = _addEventSuccess.asStateFlow()
 
     init {
-        addSampleEvent()
         getAllEvents(false)
     }
 
@@ -117,10 +116,6 @@ class EventListViewModel @Inject constructor(
     }
 
 
-    private fun addSampleEvent() {
-        viewModelScope.launch {
-            eventListRepository.addSampleEvent()
-        }
-    }
+
 
 }

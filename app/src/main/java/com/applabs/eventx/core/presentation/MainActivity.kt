@@ -15,12 +15,15 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.applabs.eventx.details.presentation.DetailsScreen
+import com.applabs.eventx.events.presentation.EventListViewModel
+import com.applabs.eventx.events.presentation.NewEventScreenForm
 import com.applabs.eventx.events.util.Screen
 import com.applabs.eventx.ui.theme.EventXTheme
 import com.google.accompanist.systemuicontroller.rememberSystemUiController
@@ -40,13 +43,14 @@ class MainActivity : ComponentActivity() {
                 ) {
 
                     val navController = rememberNavController()
+                    val eventListViewModel = hiltViewModel<EventListViewModel>()
 
                     NavHost(
                         navController = navController,
                         startDestination = Screen.Home.route
                     ) {
                         composable(Screen.Home.route) {
-                            HomeScreen(navController)
+                            HomeScreen(navController, eventListViewModel)
                         }
 
                         composable(
@@ -55,7 +59,16 @@ class MainActivity : ComponentActivity() {
                                 navArgument("eventId") { type = NavType.IntType }
                             )
                         ) { backStackEntry ->
-                            DetailsScreen()
+                            DetailsScreen(navHostController = navController)
+                        }
+
+                        composable(
+                            Screen.NewEvent.route
+                        ) { backStackEntry ->
+                            NewEventScreenForm(
+                                navHostController = navController,
+                                eventListViewModel = eventListViewModel
+                            )
                         }
                     }
 

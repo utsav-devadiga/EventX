@@ -19,9 +19,10 @@ import com.applabs.eventx.events.presentation.components.EventItem
 @Composable
 fun EventListScreen(
     navHostController: NavHostController,
-    onEvent: (EventListUiEvent) -> Unit
+    onEvent: (EventListUiEvent) -> Unit,
+    eventListViewModel: EventListViewModel
 ) {
-    val eventListViewModel = hiltViewModel<EventListViewModel>()
+
     val eventListState by eventListViewModel.eventListState.collectAsState()
 
 

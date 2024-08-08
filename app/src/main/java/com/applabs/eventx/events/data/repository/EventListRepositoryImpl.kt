@@ -116,29 +116,8 @@ class EventListRepositoryImpl @Inject constructor(
     }
 
     override suspend fun editEvent(event: EventDto) {
-
         val eventEntity = event.toEventEntity()
         eventDatabase.eventDao.updateEvent(eventEntity)
-
-
-    }
-
-    override suspend fun addSampleEvent(): Boolean {
-
-        val event = EventEntity(
-            event_description = "test",
-            event_location = "test location",
-            event_duration = "3 days",
-            event_participants = "test,test2,test3",
-            event_timeStamp = "xxxxx",
-            event_name = "event Name 3",
-            category = "test",
-            event_id = 3
-        )
-
-        eventDatabase.eventDao.upsertEvent(event = event)
-
-        return true
     }
 
 }

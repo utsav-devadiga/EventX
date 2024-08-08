@@ -8,4 +8,5 @@ sealed class Screen(val route: String) {
     object DashboardEvents : Screen("dashboard")
     object EventList : Screen("eventList")
     object Details : Screen("details")
+    object NewEvent : Screen("new event")
 }

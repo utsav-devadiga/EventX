@@ -44,9 +44,9 @@ import com.applabs.eventx.events.util.Screen
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HomeScreen(navHostController: NavHostController) {
+fun HomeScreen(navHostController: NavHostController,eventListViewModel: EventListViewModel) {
 
-    val eventListViewModel = hiltViewModel<EventListViewModel>()
+
     val eventListState = eventListViewModel.eventListState.collectAsState().value
     val bottomNavController = rememberNavController()
     Scaffold(bottomBar = {
@@ -82,13 +82,15 @@ fun HomeScreen(navHostController: NavHostController) {
                 composable(Screen.DashboardEvents.route) {
                     DashboardEventScreen(
                         navHostController = navHostController,
-                        onEvent = eventListViewModel::onEvent
+                        onEvent = eventListViewModel::onEvent,
+                        eventListViewModel = eventListViewModel
                     )
                 }
                 composable(Screen.EventList.route) {
                     EventListScreen(
                         navHostController = navHostController,
-                        onEvent = eventListViewModel::onEvent
+                        onEvent = eventListViewModel::onEvent,
+                        eventListViewModel = eventListViewModel
                     )
                 }
             }
