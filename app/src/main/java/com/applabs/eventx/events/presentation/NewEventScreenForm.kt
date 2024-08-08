@@ -1,47 +1,46 @@
 package com.applabs.eventx.events.presentation
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
+import android.app.DatePickerDialog
+import android.app.TimePickerDialog
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material3.Button
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Done
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
+import coil.compose.rememberImagePainter
 import com.applabs.eventx.events.data.remote.response.EventDto
+import java.util.*
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NewEventScreenForm(
     navHostController: NavHostController,
     eventListViewModel: EventListViewModel
 ) {
-
-
-    // Observe add event success
     val addEventSuccess by eventListViewModel.addEventSuccess.collectAsState(initial = false)
 
-    // Close the form and navigate back when event is successfully added
     LaunchedEffect(addEventSuccess) {
         if (addEventSuccess) {
             eventListViewModel.resetAddEventSuccess()
@@ -50,11 +49,11 @@ fun NewEventScreenForm(
     }
 
     var eventName by remember { mutableStateOf("") }
-    var eventTimeStamp by remember { mutableStateOf("") }
+    var eventDate by remember { mutableStateOf("") }
+    var eventTime by remember { mutableStateOf("") }
     var eventLocation by remember { mutableStateOf("") }
     var eventDuration by remember { mutableStateOf("") }
     var eventDescription by remember { mutableStateOf("") }
-    var eventCategory by remember { mutableStateOf("") }
     var newParticipant by remember { mutableStateOf("") }
 
     val eventParticipants = remember { mutableStateListOf<String>() }
@@ -63,48 +62,340 @@ fun NewEventScreenForm(
         mutableStateOf(
             mapOf(
                 "eventName" to false,
-                "eventTimeStamp" to false,
+                "eventDate" to false,
+                "eventTime" to false,
                 "eventLocation" to false,
                 "eventDuration" to false,
                 "eventDescription" to false,
-                "eventCategory" to false,
                 "newParticipant" to false
             )
         )
     }
 
-    val fields = listOf(
-        Triple("Event Name", eventName, { value: String -> eventName = value }),
-        Triple("Event Timestamp", eventTimeStamp, { value: String -> eventTimeStamp = value }),
-        Triple("Event Location", eventLocation, { value: String -> eventLocation = value }),
-        Triple("Event Duration", eventDuration, { value: String -> eventDuration = value }),
-        Triple(
-            "Event Description",
-            eventDescription,
-            { value: String -> eventDescription = value }),
-        Triple("Event Category", eventCategory, { value: String -> eventCategory = value })
-    )
+    val context = LocalContext.current
+    val calendar = Calendar.getInstance()
 
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(16.dp)
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Create Event") },
+                navigationIcon = {
+                    IconButton(onClick = { navHostController.popBackStack() }) {
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                    }
+                },
+                actions = {
+                    IconButton(onClick = {
+                        val isValid = validateFields(
+                            listOf(
+                                Triple("Event Name", eventName) { value -> eventName = value },
+                                Triple("Event Date", eventDate) { value -> eventDate = value },
+                                Triple("Event Time", eventTime) { value -> eventTime = value },
+                                Triple("Event Location", eventLocation) { value ->
+                                    eventLocation = value
+                                },
+                                Triple("Event Duration", eventDuration) { value ->
+                                    eventDuration = value
+                                },
+                                Triple(
+                                    "Event Description",
+                                    eventDescription
+                                ) { value -> eventDescription = value }
+                            ),
+                            setError = { label, hasError ->
+                                errorState =
+                                    errorState.toMutableMap().apply { this[label] = hasError }
+                            }
+                        )
+                        if (isValid) {
+                            val eventTimeStamp = "$eventDate $eventTime"
+                            val eventDto = EventDto(
+                                event_name = eventName,
+                                event_timeStamp = eventTimeStamp,
+                                event_location = eventLocation,
+                                event_duration = eventDuration,
+                                event_participants = eventParticipants,
+                                event_description = eventDescription,
+                                category = ""
+                            )
+                            eventListViewModel.addEvents(eventDto)
+                        }
+                    }) {
+                        Icon(Icons.Default.Done, contentDescription = "Save")
+                    }
+                }
+            )
+        }
+    ) { paddingValues ->
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(
+                    top = paddingValues.calculateTopPadding(),
+                    bottom = paddingValues.calculateBottomPadding(),
+                    start = paddingValues.calculateStartPadding(LayoutDirection.Ltr) + 16.dp,
+                    end = paddingValues.calculateEndPadding(LayoutDirection.Ltr) + 16.dp
+                ),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text(text = "Add New Event", style = MaterialTheme.typography.titleMedium)
+            Image(
+                painter = rememberImagePainter(data = "https://via.placeholder.com/150"),
+                contentDescription = "Event Cover",
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(200.dp)
+                    .clip(RoundedCornerShape(16.dp)),
+                contentScale = ContentScale.Crop
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            OutlinedTextField(
+                value = eventName,
+                onValueChange = { value ->
+                    eventName = value
+                    errorState =
+                        errorState.toMutableMap().apply { this["eventName"] = value.isEmpty() }
+                },
+                label = { Text("Event Title") },
+                isError = errorState["eventName"] == true,
+                modifier = Modifier.fillMaxWidth()
+            )
+            if (errorState["eventName"] == true) {
+                Text(
+                    "Event Name cannot be empty",
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodySmall
+                )
+            }
+            Spacer(modifier = Modifier.height(16.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .border(
+                            width = 0.8.dp,
+                            color = Color.Black,
+                            shape = RoundedCornerShape(0.dp)
+                        )
+                        .clickable {
+                            val datePickerDialog = DatePickerDialog(
+                                context,
+                                { _, year, month, dayOfMonth ->
+                                    val formattedDate =
+                                        String.format("%02d/%02d/%04d", dayOfMonth, month + 1, year)
+                                    eventDate = formattedDate
+                                    errorState = errorState
+                                        .toMutableMap()
+                                        .apply { this["eventDate"] = false }
+                                },
+                                calendar.get(Calendar.YEAR),
+                                calendar.get(Calendar.MONTH),
+                                calendar.get(Calendar.DAY_OF_MONTH)
+                            )
+                            datePickerDialog.show()
+                        }
+                ) {
+                    Text(
+                        text = eventDate.ifBlank { "Date" },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(10.dp),
+                    )
+                }
+                Spacer(modifier = Modifier.width(16.dp))
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .border(
+                            width = 0.8.dp,
+                            color = Color.Black,
+                            shape = RoundedCornerShape(0.dp)
+                        )
+                        .clickable {
+                            val timePickerDialog = TimePickerDialog(
+                                context,
+                                { _, hourOfDay, minute ->
+                                    val formattedTime =
+                                        String.format("%02d:%02d", hourOfDay, minute)
+                                    eventTime = formattedTime
+                                    errorState = errorState
+                                        .toMutableMap()
+                                        .apply { this["eventTime"] = false }
+                                },
+                                calendar.get(Calendar.HOUR_OF_DAY),
+                                calendar.get(Calendar.MINUTE),
+                                true
+                            )
+                            timePickerDialog.show()
+                        }
+                ) {
+                    Text(
+                        text = eventTime.ifBlank { "Time" },
+
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(10.dp)
+                    )
+                }
+            }
+            if (errorState["eventDate"] == true) {
+                Text(
+                    "Event Date cannot be empty",
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodySmall
+                )
+            }
+            if (errorState["eventTime"] == true) {
+                Text(
+                    "Event Time cannot be empty",
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodySmall
+                )
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+            OutlinedTextField(
+                value = eventLocation,
+                onValueChange = { value ->
+                    eventLocation = value
+                    errorState =
+                        errorState.toMutableMap().apply { this["eventLocation"] = value.isEmpty() }
+                },
+                label = { Text("Location") },
+                isError = errorState["eventLocation"] == true,
+                modifier = Modifier.fillMaxWidth()
+            )
+            if (errorState["eventLocation"] == true) {
+                Text(
+                    "Event Location cannot be empty",
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodySmall
+                )
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+            OutlinedTextField(
+                value = eventDuration,
+                onValueChange = { value ->
+                    eventDuration = value
+                    errorState =
+                        errorState.toMutableMap().apply { this["eventDuration"] = value.isEmpty() }
+                },
+                label = { Text("Duration") },
+                isError = errorState["eventDuration"] == true,
+                modifier = Modifier.fillMaxWidth()
+            )
+            if (errorState["eventDuration"] == true) {
+                Text(
+                    "Event Duration cannot be empty",
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodySmall
+                )
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+            OutlinedTextField(
+                value = eventDescription,
+                onValueChange = { value ->
+                    eventDescription = value
+                    errorState = errorState.toMutableMap()
+                        .apply { this["eventDescription"] = value.isEmpty() }
+                },
+                label = { Text("Description") },
+                isError = errorState["eventDescription"] == true,
+                modifier = Modifier.fillMaxWidth()
+            )
+            if (errorState["eventDescription"] == true) {
+                Text(
+                    "Event Description cannot be empty",
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodySmall
+                )
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+            OutlinedTextField(
+                value = newParticipant,
+                onValueChange = { value ->
+                    newParticipant = value
+                    errorState =
+                        errorState.toMutableMap().apply { this["newParticipant"] = value.isEmpty() }
+                },
+                label = { Text("Add Participant") },
+                trailingIcon = {
+                    IconButton(
+                        onClick = {
+                            if (newParticipant.isNotEmpty()) {
+                                eventParticipants.add(newParticipant)
+                                newParticipant = ""
+                            } else {
+                                errorState = errorState.toMutableMap()
+                                    .apply { this["newParticipant"] = true }
+                            }
+                        }
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Add,
+                            contentDescription = "Add Participant"
+                        )
+                    }
+                },
+                isError = errorState["newParticipant"] == true,
+                modifier = Modifier.fillMaxWidth()
+            )
+            if (errorState["newParticipant"] == true) {
+                Text(
+                    "Participant cannot be empty",
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodySmall
+                )
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+            LazyColumn {
+                items(eventParticipants.size) { index ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Person,
+                            contentDescription = "Participant",
+                            modifier = Modifier
+                                .size(24.dp)
+                                .clip(CircleShape)
+                                .background(Color.LightGray)
+                                .padding(4.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(text = eventParticipants[index])
+                    }
+                }
+            }
+            Spacer(modifier = Modifier.height(16.dp))
             Button(
                 onClick = {
                     val isValid = validateFields(
-                        fields,
+                        listOf(
+                            Triple("Event Name", eventName) { value -> eventName = value },
+                            Triple("Event Date", eventDate) { value -> eventDate = value },
+                            Triple("Event Time", eventTime) { value -> eventTime = value },
+                            Triple("Event Location", eventLocation) { value ->
+                                eventLocation = value
+                            },
+                            Triple("Event Duration", eventDuration) { value ->
+                                eventDuration = value
+                            },
+                            Triple(
+                                "Event Description",
+                                eventDescription
+                            ) { value -> eventDescription = value }
+                        ),
                         setError = { label, hasError ->
                             errorState = errorState.toMutableMap().apply { this[label] = hasError }
                         }
                     )
                     if (isValid) {
+                        val eventTimeStamp = "$eventDate $eventTime"
                         val eventDto = EventDto(
                             event_name = eventName,
                             event_timeStamp = eventTimeStamp,
@@ -112,81 +403,14 @@ fun NewEventScreenForm(
                             event_duration = eventDuration,
                             event_participants = eventParticipants,
                             event_description = eventDescription,
-                            category = eventCategory
+                            category = ""
                         )
                         eventListViewModel.addEvents(eventDto)
                     }
-                }
-            ) {
-                Text("Add Event")
-            }
-        }
-        Spacer(modifier = Modifier.height(8.dp))
-
-        fields.forEach { (label, value, onValueChange) ->
-            OutlinedTextField(
-                maxLines = 1,
-                value = value,
-                onValueChange = { newValue ->
-                    onValueChange(newValue)
-                    errorState =
-                        errorState.toMutableMap().apply { this[label] = newValue.isEmpty() }
                 },
-                label = { Text(label) },
-                isError = errorState[label] == true,
                 modifier = Modifier.fillMaxWidth()
-            )
-            if (errorState[label] == true) {
-                Text(
-                    "$label cannot be empty",
-                    color = MaterialTheme.colorScheme.error,
-                    style = MaterialTheme.typography.bodySmall
-                )
-            }
-            Spacer(modifier = Modifier.height(8.dp))
-        }
-
-        // New Participant Input with Trailing Icon
-        OutlinedTextField(
-            maxLines = 1,
-            value = newParticipant,
-            onValueChange = {
-                newParticipant = it
-                errorState =
-                    errorState.toMutableMap().apply { this["newParticipant"] = it.isEmpty() }
-            },
-            label = { Text("Add Participant") },
-            isError = errorState["newParticipant"] == true,
-            trailingIcon = {
-                IconButton(
-                    onClick = {
-                        if (newParticipant.isNotEmpty()) {
-                            eventParticipants.add(newParticipant)
-                            newParticipant = ""
-                        } else {
-                            errorState =
-                                errorState.toMutableMap().apply { this["newParticipant"] = true }
-                        }
-                    }
-                ) {
-                    Icon(imageVector = Icons.Default.Add, contentDescription = "Add Participant")
-                }
-            },
-            modifier = Modifier.fillMaxWidth()
-        )
-        if (errorState["newParticipant"] == true) {
-            Text(
-                "Participant cannot be empty",
-                color = MaterialTheme.colorScheme.error,
-                style = MaterialTheme.typography.bodySmall
-            )
-        }
-        Spacer(modifier = Modifier.height(10.dp))
-
-        // Display Participants
-        LazyColumn {
-            items(eventParticipants.size) { index ->
-                Text(text = eventParticipants[index])
+            ) {
+                Text("Create Event")
             }
         }
     }

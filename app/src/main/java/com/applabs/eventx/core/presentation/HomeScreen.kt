@@ -3,6 +3,8 @@ package com.applabs.eventx.core.presentation
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.calculateEndPadding
+import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
@@ -25,6 +27,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -44,7 +47,7 @@ import com.applabs.eventx.events.util.Screen
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HomeScreen(navHostController: NavHostController,eventListViewModel: EventListViewModel) {
+fun HomeScreen(navHostController: NavHostController, eventListViewModel: EventListViewModel) {
 
 
     val eventListState = eventListViewModel.eventListState.collectAsState().value
@@ -73,7 +76,12 @@ fun HomeScreen(navHostController: NavHostController,eventListViewModel: EventLis
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(it)
+                .padding(
+                    top = it.calculateTopPadding(),
+                    bottom = it.calculateBottomPadding(),
+                    start = it.calculateStartPadding(LayoutDirection.Ltr) + 8.dp,
+                    end = it.calculateEndPadding(LayoutDirection.Ltr) + 8.dp
+                )
         ) {
             NavHost(
                 navController = bottomNavController,

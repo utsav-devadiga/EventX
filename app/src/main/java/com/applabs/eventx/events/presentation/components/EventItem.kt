@@ -1,12 +1,13 @@
 package com.applabs.eventx.events.presentation.components
 
-import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Divider
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.Card
@@ -20,8 +21,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
+import coil.compose.rememberImagePainter
 import com.applabs.eventx.events.domain.model.Event
 import com.applabs.eventx.events.util.Screen
 
@@ -32,10 +35,7 @@ fun EventItem(
 ) {
     Card(
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.secondary),
         modifier = Modifier
-            .wrapContentHeight()
             .padding(8.dp)
             .clickable {
                 navHostController.navigate(Screen.Details.route + "/${event.event_id}")
@@ -43,53 +43,56 @@ fun EventItem(
     ) {
         Column(
             modifier = Modifier
-                .background(MaterialTheme.colorScheme.surface)
+                .fillMaxWidth()
                 .padding(16.dp)
         ) {
+            Image(
+                painter = rememberImagePainter(data = "https://via.placeholder.com/150"),
+                contentDescription = "Event Cover",
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(100.dp)
+                    .clip(RoundedCornerShape(16.dp)),
+                contentScale = ContentScale.Crop
+            )
+            Spacer(modifier = Modifier.height(8.dp))
             Text(
                 text = event.event_name,
-                style = MaterialTheme.typography.titleLarge,
+                style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurface
             )
-            Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                text = event.event_location,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+            )
+            Spacer(modifier = Modifier.height(8.dp))
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                EventDetailItem(
-                    icon = Icons.Default.Place,
-                    text = event.event_location
-                )
-                Divider(
-                    color = Color.Gray,
-                    modifier = Modifier
-                        .height(24.dp)
-                        .width(1.dp)
-                )
-                EventDetailItem(
-                    icon = Icons.Default.Event,
-                    text = event.event_timeStamp
-                )
-                Divider(
-                    color = Color.Gray,
-                    modifier = Modifier
-                        .height(24.dp)
-                        .width(1.dp)
-                )
-                EventDetailItem(
-                    icon = Icons.Default.Schedule,
-                    text = event.event_duration
-                )
-                Divider(
-                    color = Color.Gray,
-                    modifier = Modifier
-                        .height(24.dp)
-                        .width(1.dp)
-                )
-                EventDetailItem(
-                    icon = Icons.Default.Group,
-                    text = "${event.event_participants.size} people"
+                // Icons for participants (for simplicity, using same icon)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Default.Person,
+                        contentDescription = null,
+                        modifier = Modifier
+                            .size(20.dp)
+                            .clip(CircleShape)
+                            .background(Color.LightGray)
+                            .padding(4.dp)
+                    )
+                    Text(
+                        text = " ${event.event_participants.size}+",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+                Text(
+                    text = event.event_timeStamp,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface
                 )
             }
         }
@@ -97,26 +100,18 @@ fun EventItem(
 }
 
 @Composable
-fun EventDetailItem(icon: ImageVector, text: String) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center,
-        modifier = Modifier.padding(horizontal = 8.dp)
+fun EventGrid(
+    events: List<Event>,
+    navHostController: NavHostController
+) {
+    LazyVerticalGrid(
+        columns = GridCells.Fixed(2),
+        contentPadding = PaddingValues(8.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        Icon(
-            icon,
-            contentDescription = null,
-            tint = Color.Gray,
-            modifier = Modifier
-                .size(48.dp)
-                .clip(CircleShape)
-                .background(Color.LightGray)
-                .padding(8.dp)
-        )
-        Text(
-            text = text,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurface
-        )
+        items(events.size) { index ->
+            EventItem(event = events[index], navHostController = navHostController)
+        }
     }
 }
