@@ -2,27 +2,55 @@ package com.applabs.eventx.events.presentation
 
 import android.app.DatePickerDialog
 import android.app.TimePickerDialog
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.calculateEndPadding
+import androidx.compose.foundation.layout.calculateStartPadding
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Done
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.Button
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.LayoutDirection
@@ -31,13 +59,15 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import coil.compose.rememberImagePainter
 import com.applabs.eventx.events.data.remote.response.EventDto
-import java.util.*
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NewEventScreenForm(
     navHostController: NavHostController,
-    eventListViewModel: EventListViewModel
+    eventListViewModel: EventListViewModel = hiltViewModel()
 ) {
     val addEventSuccess by eventListViewModel.addEventSuccess.collectAsState(initial = false)
 
@@ -54,6 +84,7 @@ fun NewEventScreenForm(
     var eventLocation by remember { mutableStateOf("") }
     var eventDuration by remember { mutableStateOf("") }
     var eventDescription by remember { mutableStateOf("") }
+    var eventCategory by remember { mutableStateOf("") }
     var newParticipant by remember { mutableStateOf("") }
 
     val eventParticipants = remember { mutableStateListOf<String>() }
@@ -67,6 +98,7 @@ fun NewEventScreenForm(
                 "eventLocation" to false,
                 "eventDuration" to false,
                 "eventDescription" to false,
+                "eventCategory" to false,
                 "newParticipant" to false
             )
         )
@@ -100,7 +132,10 @@ fun NewEventScreenForm(
                                 Triple(
                                     "Event Description",
                                     eventDescription
-                                ) { value -> eventDescription = value }
+                                ) { value -> eventDescription = value },
+                                Triple("Event Category", eventCategory) { value ->
+                                    eventCategory = value
+                                }
                             ),
                             setError = { label, hasError ->
                                 errorState =
@@ -116,7 +151,7 @@ fun NewEventScreenForm(
                                 event_duration = eventDuration,
                                 event_participants = eventParticipants,
                                 event_description = eventDescription,
-                                category = ""
+                                category = eventCategory
                             )
                             eventListViewModel.addEvents(eventDto)
                         }
@@ -127,9 +162,11 @@ fun NewEventScreenForm(
             )
         }
     ) { paddingValues ->
+        // Make the whole content scrollable with a verticalScroll
         Column(
             modifier = Modifier
                 .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
                 .padding(
                     top = paddingValues.calculateTopPadding(),
                     bottom = paddingValues.calculateBottomPadding(),
@@ -204,7 +241,7 @@ fun NewEventScreenForm(
                             .padding(10.dp),
                     )
                 }
-                Spacer(modifier = Modifier.width(16.dp))
+                Spacer(modifier = Modifier.width(8.dp))
                 Box(
                     modifier = Modifier
                         .weight(1f)
@@ -292,6 +329,27 @@ fun NewEventScreenForm(
                     style = MaterialTheme.typography.bodySmall
                 )
             }
+
+            Spacer(modifier = Modifier.height(8.dp))
+            OutlinedTextField(
+                value = eventCategory,
+                onValueChange = { value ->
+                    eventCategory = value
+                    errorState =
+                        errorState.toMutableMap().apply { this["eventCategory"] = value.isEmpty() }
+                },
+                label = { Text("Category") },
+                isError = errorState["eventCategory"] == true,
+                modifier = Modifier.fillMaxWidth()
+            )
+            if (errorState["eventCategory"] == true) {
+                Text(
+                    "Event Category cannot be empty",
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodySmall
+                )
+            }
+
             Spacer(modifier = Modifier.height(8.dp))
             OutlinedTextField(
                 value = eventDescription,
@@ -349,14 +407,19 @@ fun NewEventScreenForm(
                 )
             }
             Spacer(modifier = Modifier.height(8.dp))
-            LazyColumn {
+            // Horizontally scrollable participants list with delete functionality
+            LazyRow {
                 items(eventParticipants.size) { index ->
                     Row(
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(8.dp),
+                            .padding(start = 8.dp, top = 8.dp, end = 8.dp, bottom = 8.dp)
+                            .border(
+                                width = 1.dp, color = MaterialTheme.colorScheme.onBackground,
+                                CircleShape
+                            ),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
+                        Spacer(modifier = Modifier.width(8.dp))
                         Icon(
                             imageVector = Icons.Default.Person,
                             contentDescription = "Participant",
@@ -364,10 +427,26 @@ fun NewEventScreenForm(
                                 .size(24.dp)
                                 .clip(CircleShape)
                                 .background(Color.LightGray)
-                                .padding(4.dp)
+                                .padding(2.dp)
+
                         )
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text(text = eventParticipants[index])
+                        Text(
+                            text = eventParticipants[index],
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        IconButton(
+                            onClick = {
+                                eventParticipants.removeAt(index)  // Remove the participant from the list
+                            }
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Close,
+                                contentDescription = "Remove Participant",
+                                tint = MaterialTheme.colorScheme.onBackground
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(8.dp))
                     }
                 }
             }
@@ -395,7 +474,9 @@ fun NewEventScreenForm(
                         }
                     )
                     if (isValid) {
-                        val eventTimeStamp = "$eventDate $eventTime"
+                        val eventTimeStamp =
+                            convertToTimestamp(eventDate, eventTime)?.takeIf { it.isNotBlank() }
+                                ?: ""
                         val eventDto = EventDto(
                             event_name = eventName,
                             event_timeStamp = eventTimeStamp,
@@ -403,7 +484,7 @@ fun NewEventScreenForm(
                             event_duration = eventDuration,
                             event_participants = eventParticipants,
                             event_description = eventDescription,
-                            category = ""
+                            category = eventCategory
                         )
                         eventListViewModel.addEvents(eventDto)
                     }
@@ -430,4 +511,12 @@ fun validateFields(
         }
     }
     return isValid
+}
+
+fun convertToTimestamp(eventDate: String, eventTime: String): String? {
+    val dateTimeString = "$eventDate $eventTime"
+    val inputFormat = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
+    val outputFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
+    val date = inputFormat.parse(dateTimeString)
+    return date?.let { outputFormat.format(it) }
 }

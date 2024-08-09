@@ -1,68 +1,45 @@
 package com.applabs.eventx.details.presentation
 
+import android.app.DatePickerDialog
+import android.app.TimePickerDialog
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Category
-import androidx.compose.material.icons.filled.Event
-import androidx.compose.material.icons.filled.Place
-import androidx.compose.material.icons.filled.Schedule
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import coil.compose.rememberImagePainter
 import com.applabs.eventx.events.domain.model.Event
 import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
+import java.util.*
 
-/**
- * @author Utsav Devadiga
- */
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DetailsScreen(
     navHostController: NavHostController
 ) {
-
     val detailsViewModel = hiltViewModel<DetailsViewModel>()
     val detailsState = detailsViewModel.detailsState.collectAsState().value
 
+    var editMode by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -71,6 +48,13 @@ fun DetailsScreen(
                 navigationIcon = {
                     IconButton(onClick = { navHostController.popBackStack() }) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                    }
+                },
+                actions = {
+                    if (!editMode) {
+                        IconButton(onClick = { editMode = true }) {
+                            Icon(Icons.Default.Edit, contentDescription = "Edit")
+                        }
                     }
                 }
             )
@@ -86,6 +70,12 @@ fun DetailsScreen(
             detailsState.event != null -> {
                 EventDetailContent(
                     event = detailsState.event!!,
+                    editMode = editMode,
+                    onUpdateEvent = { updatedEvent ->
+                        //detailsViewModel.updateEvent(updatedEvent, detailsState.event!!.id)
+                        editMode = false
+                    },
+                    onCancelEdit = { editMode = false },
                     modifier = Modifier.padding(padding)
                 )
             }
@@ -94,14 +84,25 @@ fun DetailsScreen(
 }
 
 @Composable
-fun EventDetailContent(event: Event, modifier: Modifier = Modifier) {
+fun EventDetailContent(
+    event: Event,
+    editMode: Boolean,
+    onUpdateEvent: (Event) -> Unit,
+    onCancelEdit: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    var eventName by remember { mutableStateOf(event.event_name) }
+    var eventDescription by remember { mutableStateOf(event.event_description) }
+    var eventLocation by remember { mutableStateOf(event.event_location) }
+    var eventDate by remember { mutableStateOf(event.event_timeStamp) }
+    var eventCategory by remember { mutableStateOf(event.category) }
+    var eventDuration by remember { mutableStateOf(event.event_duration) }
+    val eventParticipants =
+        remember { mutableStateListOf(*event.event_participants.toTypedArray()) }
+    var newParticipant by remember { mutableStateOf("") }
 
-    val date = try {
-        val dateFormat = SimpleDateFormat("dd MMMM yyyy", Locale.getDefault())
-        dateFormat.format(Date(event.event_timeStamp.toLong()))
-    } catch (e: Exception) {
-        event.event_timeStamp // Fallback to the original string if parsing fails
-    }
+    val context = LocalContext.current
+    val calendar = Calendar.getInstance()
 
     Column(
         modifier = modifier
@@ -119,54 +120,230 @@ fun EventDetailContent(event: Event, modifier: Modifier = Modifier) {
             contentScale = ContentScale.Crop
         )
         Spacer(modifier = Modifier.height(8.dp))
-        Text(
-            text = event.event_name,
-            style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.Bold
-        )
+
+        // Event Name
+        if (editMode) {
+            OutlinedTextField(
+                value = eventName,
+                onValueChange = { eventName = it },
+                label = { Text("Event Name") },
+                modifier = Modifier.fillMaxWidth()
+            )
+        } else {
+            Text(
+                text = eventName,
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Bold
+            )
+        }
         Spacer(modifier = Modifier.height(16.dp))
 
         // Description Card
-        EventDetailCard(title = "Description", content = event.event_description)
+        if (editMode) {
+            OutlinedTextField(
+                value = eventDescription,
+                onValueChange = { eventDescription = it },
+                label = { Text("Description") },
+                modifier = Modifier.fillMaxWidth()
+            )
+        } else {
+            EventDetailCard(title = "Description", content = eventDescription)
+        }
         Spacer(modifier = Modifier.height(8.dp))
 
-        // Location and Date
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            EventDetailIconCard(
-                icon = Icons.Default.Place,
-                text = event.event_location,
-                modifier = Modifier.weight(1f)
-            )
+        // Location and Date/Time
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .border(
+                        width = 0.8.dp,
+                        color = Color.Black,
+                        shape = RoundedCornerShape(0.dp)
+                    )
+                    .clickable {
+                        val datePickerDialog = DatePickerDialog(
+                            context,
+                            { _, year, month, dayOfMonth ->
+                                val formattedDate =
+                                    String.format("%02d/%02d/%04d", dayOfMonth, month + 1, year)
+                                eventDate = formattedDate
+                                errorState = errorState
+                                    .toMutableMap()
+                                    .apply { this["eventDate"] = false }
+                            },
+                            calendar.get(Calendar.YEAR),
+                            calendar.get(Calendar.MONTH),
+                            calendar.get(Calendar.DAY_OF_MONTH)
+                        )
+                        datePickerDialog.show()
+                    }
+            ) {
+                Text(
+                    text = eventDate.ifBlank { "Date" },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(10.dp),
+                )
+            }
             Spacer(modifier = Modifier.width(8.dp))
-            EventDetailIconCard(
-                icon = Icons.Default.Event,
-                text = date,
-                modifier = Modifier.weight(1f)
-            )
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .border(
+                        width = 0.8.dp,
+                        color = Color.Black,
+                        shape = RoundedCornerShape(0.dp)
+                    )
+                    .clickable {
+                        val timePickerDialog = TimePickerDialog(
+                            context,
+                            { _, hourOfDay, minute ->
+                                val formattedTime =
+                                    String.format("%02d:%02d", hourOfDay, minute)
+                                eventTime = formattedTime
+                                errorState = errorState
+                                    .toMutableMap()
+                                    .apply { this["eventTime"] = false }
+                            },
+                            calendar.get(Calendar.HOUR_OF_DAY),
+                            calendar.get(Calendar.MINUTE),
+                            true
+                        )
+                        timePickerDialog.show()
+                    }
+            ) {
+                Text(
+                    text = eventTime.ifBlank { "Time" },
+
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(10.dp)
+                )
+            }
         }
         Spacer(modifier = Modifier.height(8.dp))
 
         // Category and Duration
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            EventDetailIconCard(
-                icon = Icons.Default.Category,
-                text = event.category,
-                modifier = Modifier.weight(1f)
-            )
-            Spacer(modifier = Modifier.width(8.dp))
-            EventDetailIconCard(
-                icon = Icons.Default.Schedule,
-                text = event.event_duration,
-                modifier = Modifier.weight(1f)
-            )
+            if (editMode) {
+                OutlinedTextField(
+                    value = eventCategory,
+                    onValueChange = { eventCategory = it },
+                    label = { Text("Category") },
+                    modifier = Modifier.weight(1f)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                OutlinedTextField(
+                    value = eventDuration,
+                    onValueChange = { eventDuration = it },
+                    label = { Text("Duration") },
+                    modifier = Modifier.weight(1f)
+                )
+            } else {
+                EventDetailIconCard(
+                    icon = Icons.Default.Category,
+                    text = eventCategory,
+                    modifier = Modifier.weight(1f)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                EventDetailIconCard(
+                    icon = Icons.Default.Schedule,
+                    text = eventDuration,
+                    modifier = Modifier.weight(1f)
+                )
+            }
         }
         Spacer(modifier = Modifier.height(8.dp))
 
-        // Participants Card
-        EventDetailCard(
-            title = "Participants",
-            content = event.event_participants.joinToString(", ")
-        )
+        // Participants
+        if (editMode) {
+            OutlinedTextField(
+                value = newParticipant,
+                onValueChange = { newParticipant = it },
+                label = { Text("Add Participant") },
+                trailingIcon = {
+                    IconButton(onClick = {
+                        if (newParticipant.isNotEmpty()) {
+                            eventParticipants.add(newParticipant)
+                            newParticipant = ""
+                        }
+                    }) {
+                        Icon(Icons.Default.Add, contentDescription = "Add Participant")
+                    }
+                },
+                modifier = Modifier.fillMaxWidth()
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            LazyColumn {
+                items(eventParticipants.size) { index ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = eventParticipants[index],
+                            modifier = Modifier.weight(1f)
+                        )
+                        IconButton(onClick = {
+                            eventParticipants.removeAt(index)
+                        }) {
+                            Icon(
+                                imageVector = Icons.Default.Delete,
+                                contentDescription = "Remove Participant",
+                                tint = Color.Red
+                            )
+                        }
+                    }
+                }
+            }
+        } else {
+            EventDetailCard(
+                title = "Participants",
+                content = eventParticipants.joinToString(", ")
+            )
+        }
+
+        if (editMode) {
+            Spacer(modifier = Modifier.height(16.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Button(
+                    onClick = {
+                        onCancelEdit()
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color.Gray),
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Text("Cancel")
+                }
+                Spacer(modifier = Modifier.width(8.dp))
+                Button(
+                    onClick = {
+                        val updatedEvent = event.copy(
+                            event_name = eventName,
+                            event_description = eventDescription,
+                            event_location = eventLocation,
+                            event_timeStamp = eventDate,
+                            event_duration = eventDuration,
+                            event_participants = eventParticipants.toList(),
+                            category = eventCategory
+                        )
+                        onUpdateEvent(updatedEvent)
+                    },
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Text("Update")
+                }
+            }
+        }
     }
 }
 
@@ -192,6 +369,7 @@ fun EventDetailCard(title: String, content: String) {
         }
     }
 }
+
 
 @Composable
 fun EventDetailIconCard(icon: ImageVector, text: String, modifier: Modifier = Modifier) {

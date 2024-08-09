@@ -27,6 +27,8 @@ import androidx.navigation.NavHostController
 import coil.compose.rememberImagePainter
 import com.applabs.eventx.events.domain.model.Event
 import com.applabs.eventx.events.util.Screen
+import java.text.SimpleDateFormat
+import java.util.Locale
 
 @Composable
 fun EventItem(
@@ -90,7 +92,7 @@ fun EventItem(
                     )
                 }
                 Text(
-                    text = event.event_timeStamp,
+                    text = timeStampToDate(event.event_timeStamp)?.takeIf { it.isNotBlank() } ?: "",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurface
                 )
@@ -114,4 +116,21 @@ fun EventGrid(
             EventItem(event = events[index], navHostController = navHostController)
         }
     }
+}
+
+fun timeStampToDate(inputDateTime: String): String? {
+
+    try {
+        val inputFormat = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
+
+        val outputFormat = SimpleDateFormat("dd MMM yyyy, hh:mm aa", Locale.getDefault())
+
+
+        val date = inputFormat.parse(inputDateTime)
+
+        return date?.let { outputFormat.format(it) }
+    } catch (e: Exception) {
+        return ""
+    }
+
 }
